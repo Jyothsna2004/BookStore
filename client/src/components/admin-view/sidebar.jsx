@@ -1,86 +1,71 @@
+import { Link, useLocation } from "react-router-dom";
+import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
 import {
-  BadgeCheck,
-  ChartNoAxesCombined,
   LayoutDashboard,
-  ShoppingBasket,
+  Package,
+  ShoppingCart,
+  Settings,
+  MessageSquare,
 } from "lucide-react";
-import { Fragment } from "react";
-import { useNavigate } from "react-router-dom";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 
-const adminSidebarMenuItems = [
+const menuItems = [
   {
-    id: "dashboard",
-    label: "Dashboard",
-    path: "/admin/dashboard",
-    icon: <LayoutDashboard />,
+    title: "Dashboard",
+    href: "/admin/dashboard",
+    icon: LayoutDashboard,
   },
   {
-    id: "products",
-    label: "Products",
-    path: "/admin/products",
-    icon: <ShoppingBasket />,
+    title: "Products",
+    href: "/admin/products",
+    icon: Package,
   },
   {
-    id: "orders",
-    label: "Orders",
-    path: "/admin/orders",
-    icon: <BadgeCheck />,
+    title: "Orders",
+    href: "/admin/orders",
+    icon: ShoppingCart,
+  },
+  {
+    title: "Reviews",
+    href: "/admin/reviews",
+    icon: MessageSquare,
+  },
+  {
+    title: "Settings",
+    href: "/admin/settings",
+    icon: Settings,
   },
 ];
 
-function MenuItems({ setOpen }) {
-  const navigate = useNavigate();
+function AdminSidebar({ className }) {
+  const location = useLocation();
 
   return (
-    <nav className="mt-8 flex-col flex gap-2">
-      {adminSidebarMenuItems.map((menuItem) => (
-        <div
-          key={menuItem.id}
-          onClick={() => {
-            navigate(menuItem.path);
-            setOpen ? setOpen(false) : null;
-          }}
-          className="flex cursor-pointer text-xl items-center gap-2 rounded-md px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          {menuItem.icon}
-          <span>{menuItem.label}</span>
-        </div>
-      ))}
-    </nav>
-  );
-}
-
-function AdminSideBar({ open, setOpen }) {
-  const navigate = useNavigate();
-
-  return (
-    <Fragment>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-64">
-          <div className="flex flex-col h-full">
-            <SheetHeader className="border-b">
-              <SheetTitle className="flex gap-2 mt-5 mb-5">
-                <ChartNoAxesCombined size={30} />
-                <h1 className="text-2xl font-extrabold">Admin Panel</h1>
-              </SheetTitle>
-            </SheetHeader>
-            <MenuItems setOpen={setOpen} />
+    <div className={cn("pb-12", className)}>
+      <div className="space-y-4 py-4">
+        <div className="px-3 py-2">
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+            Admin Panel
+          </h2>
+          <div className="space-y-1">
+            {menuItems.map((item) => (
+              <Button
+                key={item.href}
+                variant={location.pathname === item.href ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                asChild
+              >
+                <Link to={item.href}>
+                  <item.icon className="mr-2 h-4 w-4" />
+                  {item.title}
+                </Link>
+              </Button>
+            ))}
           </div>
-        </SheetContent>
-      </Sheet>
-      <aside className="hidden w-64 flex-col border-r bg-background p-6 lg:flex">
-        <div
-          onClick={() => navigate("/admin/dashboard")}
-          className="flex cursor-pointer items-center gap-2"
-        >
-          <ChartNoAxesCombined size={30} />
-          <h1 className="text-2xl font-extrabold">Admin Panel</h1>
         </div>
-        <MenuItems />
-      </aside>
-    </Fragment>
+      </div>
+    </div>
   );
 }
 
-export default AdminSideBar;
+export default AdminSidebar;

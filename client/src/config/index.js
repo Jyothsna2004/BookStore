@@ -59,13 +59,14 @@ export const addProductFormElements = [
     componentType: "select",
     options: [
       { id: "fantasy", label: "Fantasy" },
-    { id: "thriller", label: "Thriller" },
-    { id: "adventure", label: "Adventure" },
-    { id: "mystery", label: "Mystery" },
-    { id: "romance", label: "Romance" },
-    { id: "history", label: "History" },
-    { id: "biography", label: "Biography" },
-    { id: "horror", label: "Horror" },
+      { id: "thriller", label: "Thriller" },
+      { id: "adventure", label: "Adventure" },
+      { id: "mystery", label: "Mystery" },
+      { id: "fiction", label: "Fiction" },
+      { id: "romance", label: "Romance" },
+      { id: "history", label: "History" },
+      { id: "biography", label: "Biography" },
+      { id: "horror", label: "Horror" },
     ],
   },
   {
@@ -74,11 +75,11 @@ export const addProductFormElements = [
     componentType: "select",
     options: [
       { id: "english", label: "English" },
-    { id: "hindi", label: "Hindi" },
-    { id: "telugu", label: "Telugu" },
-    { id: "tamil", label: "Tamil" },
-    { id: "korean", label: "Korean" },
-    { id:"marati",label:"Marati"}
+      { id: "hindi", label: "Hindi" },
+      { id: "telugu", label: "Telugu" },
+      { id: "tamil", label: "Tamil" },
+      { id: "korean", label: "Korean" },
+      { id: "marathi", label: "Marathi" },
     ],
   },
   {
@@ -111,76 +112,86 @@ export const shoppingViewHeaderMenuItems = [
     path: "/shop/home",
   },
   {
+    id: "read",
+    label: "Read",
+    path: "/read",
+  },
+  {
     id: "products",
     label: "Products",
     path: "/shop/listing",
   },
-    {
-      id: "fantasy",
-      label: "Fantasy",
-      path: "/shop/listing",
-    },
-    {
-      id: "thriller",
-      label: "Thriller",
-      path: "/shop/listing",
-    },
-    {
-      id: "adventurous",
-      label: "Adventurous",
-      path: "/shop/listing",
-    },
-    {
-      id: "mystery",
-      label: "Mystery",
-      path: "/shop/listing",
-    },
-    {
-      id: "romance",
-      label: "Romance",
-      path: "/shop/listing",
-    },
-    {
-      id: "history",
-      label: "History",
-      path: "/shop/listing",
-    },
-    {
-      id: "biography",
-      label: "Biography",
-      path: "/shop/listing",
-    },
-    {
-      id: "horror",
-      label: "Horror",
-      path: "/shop/listing",
-    }, 
+  {
+    id: "fantasy",
+    label: "Fantasy",
+    path: "/shop/listing",
+  },
+  {
+    id: "thriller",
+    label: "Thriller",
+    path: "/shop/listing",
+  },
+  {
+    id: "adventure",
+    label: "Adventure",
+    path: "/shop/listing",
+  },
+  {
+    id: "mystery",
+    label: "Mystery",
+    path: "/shop/listing",
+  },
+  {
+    id: "fiction",
+    label: "Fiction",
+    path: "/shop/listing",
+  },
+  {
+    id: "romance",
+    label: "Romance",
+    path: "/shop/listing",
+  },
+  {
+    id: "history",
+    label: "History",
+    path: "/shop/listing",
+  },
+  {
+    id: "biography",
+    label: "Biography",
+    path: "/shop/listing",
+  },
+  {
+    id: "horror",
+    label: "Horror",
+    path: "/shop/listing",
+  },
   {
     id: "search",
     label: "Search",
     path: "/shop/search",
   },
-  
 ];
 
 export const categoryOptionsMap = {
   fantasy: "Fantasy",
   thriller: "Thriller",
-  kids: "Adventure",
-  footwear: "Mystery",
-  accessories: "Romance",
-  new: "History",
+  adventure: "Adventure",
+  mystery: "Mystery",
+  fiction: "Fiction",
+  romance: "Romance",
+  history: "History",
   biography: "Biography",
-  horror: "Horror"
+  horror: "Horror",
 };
 
 export const brandOptionsMap = {
-  english:"English",
-  hindi:"Hindi",
-  telugu:"Telugu",
-  tamil:"Tamil",
-  korean:"Korean",
-  marati:"Marati"
+  english: "English",
+  hindi: "Hindi",
+  telugu: "Telugu",
+  tamil: "Tamil",
+  korean: "Korean",
+  marathi: "Marathi",
 };
 
 export const filterOptions = {
@@ -189,19 +200,20 @@ export const filterOptions = {
     { id: "thriller", label: "Thriller" },
     { id: "adventure", label: "Adventure" },
     { id: "mystery", label: "Mystery" },
+    { id: "fiction", label: "Fiction" },
     { id: "romance", label: "Romance" },
     { id: "history", label: "History" },
     { id: "biography", label: "Biography" },
     { id: "horror", label: "Horror" },
-  ],  
+  ],
   brand: [
     { id: "english", label: "English" },
     { id: "hindi", label: "Hindi" },
     { id: "telugu", label: "Telugu" },
     { id: "tamil", label: "Tamil" },
     { id: "korean", label: "Korean" },
-    { id: "marati", label: "Marati"},
-  ]  
+    { id: "marathi", label: "Marathi" },
+  ],
 };
 
 export const sortOptions = [

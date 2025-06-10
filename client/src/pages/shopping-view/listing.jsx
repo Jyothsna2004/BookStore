@@ -27,19 +27,16 @@ function createSearchParamsHelper(filterParams) {
   for (const [key, value] of Object.entries(filterParams)) {
     if (Array.isArray(value) && value.length > 0) {
       const paramValue = value.join(",");
-
       queryParams.push(`${key}=${encodeURIComponent(paramValue)}`);
     }
   }
-
-  console.log(queryParams, "queryParams");
 
   return queryParams.join("&");
 }
 
 function ShoppingListing() {
   const dispatch = useDispatch();
-  const { productList, productDetails } = useSelector(
+  const { productList, productDetails, isLoading, error } = useSelector(
     (state) => state.shopProducts
   );
   const { cartItems } = useSelector((state) => state.shopCart);
@@ -79,12 +76,19 @@ function ShoppingListing() {
   }
 
   function handleGetProductDetails(getCurrentProductId) {
-    console.log(getCurrentProductId);
     dispatch(fetchProductDetails(getCurrentProductId));
   }
 
   function handleAddtoCart(getCurrentProductId, getTotalStock) {
-    console.log(cartItems);
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to add items to cart",
+        variant: "destructive",
+      });
+      return;
+    }
+
     let getCartItems = cartItems.items || [];
 
     if (getCartItems.length) {
@@ -95,10 +99,10 @@ function ShoppingListing() {
         const getQuantity = getCartItems[indexOfCurrentItem].quantity;
         if (getQuantity + 1 > getTotalStock) {
           toast({
-            title: `Only ${getQuantity} quantity can be added for this item`,
+            title: `Only ${getTotalStock} items in stock`,
+            description: `You already have ${getQuantity} in your cart`,
             variant: "destructive",
           });
-
           return;
         }
       }
@@ -114,7 +118,14 @@ function ShoppingListing() {
       if (data?.payload?.success) {
         dispatch(fetchCartItems(user?.id));
         toast({
-          title: "Product is added to cart",
+          title: "Success!",
+          description: "Product added to cart",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add product to cart",
+          variant: "destructive",
         });
       }
     });
@@ -143,7 +154,15 @@ function ShoppingListing() {
     if (productDetails !== null) setOpenDetailsDialog(true);
   }, [productDetails]);
 
-  console.log(productList, "productListproductListproductList");
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 p-4 md:p-6">
@@ -153,7 +172,7 @@ function ShoppingListing() {
           <h2 className="text-lg font-extrabold">All Products</h2>
           <div className="flex items-center gap-3">
             <span className="text-muted-foreground">
-              {productList?.length} Products
+              {productList?.length || 0} Products
             </span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -182,15 +201,36 @@ function ShoppingListing() {
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-          {productList && productList.length > 0
-            ? productList.map((productItem) => (
-                <ShoppingProductTile
-                  handleGetProductDetails={handleGetProductDetails}
-                  product={productItem}
-                  handleAddtoCart={handleAddtoCart}
-                />
-              ))
-            : null}
+          {isLoading ? (
+            <div className="col-span-full text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Loading products...</p>
+            </div>
+          ) : error ? (
+            <div className="col-span-full text-center py-8">
+              <p className="text-red-500">{error}</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => dispatch(fetchAllFilteredProducts({ filterParams: filters, sortParams: sort }))}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : productList && productList.length > 0 ? (
+            productList.map((productItem) => (
+              <ShoppingProductTile
+                key={productItem._id}
+                handleGetProductDetails={handleGetProductDetails}
+                product={productItem}
+                handleAddtoCart={handleAddtoCart}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <p className="text-muted-foreground">No products found</p>
+            </div>
+          )}
         </div>
       </div>
       <ProductDetailsDialog

@@ -1,13 +1,20 @@
 const express = require("express");
-
+const { isAuthenticated } = require('../../middleware/auth-middleware');
 const {
-  addProductReview,
-  getProductReviews,
-} = require("../../controllers/shop/product-review-controller");
+  addReview,
+  updateReview,
+  deleteReview,
+  getProductReviews
+} = require("../../controllers/shop/review-controller");
 
 const router = express.Router();
 
-router.post("/add", addProductReview);
-router.get("/:productId", getProductReviews);
+// Get reviews for a product (public)
+router.get('/product/:productId', getProductReviews);
+
+// Protected routes (require authentication)
+router.post('/add', isAuthenticated, addReview);
+router.put('/update/:reviewId', isAuthenticated, updateReview);
+router.delete('/delete/:reviewId', isAuthenticated, deleteReview);
 
 module.exports = router;

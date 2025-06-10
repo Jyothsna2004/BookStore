@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import AuthLayout from "./components/auth/layout";
 import AuthLogin from "./pages/auth/login";
 import AuthRegister from "./pages/auth/register";
@@ -22,6 +22,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import PaypalReturnPage from "./pages/shopping-view/paypal-return";
 import PaymentSuccessPage from "./pages/shopping-view/payment-success";
 import SearchProducts from "./pages/shopping-view/search";
+import BookList from './components/BookList/BookList';
+import PDFPreview from './components/PDFPreview/PDFPreview';
+import Reader from './components/Reader/Reader';
+import AdminReviews from "./pages/admin-view/reviews";
 
 function App() {
   const { user, isAuthenticated, isLoading } = useSelector(
@@ -32,23 +36,14 @@ function App() {
   useEffect(() => {
     dispatch(checkAuth());
   }, [dispatch]);
-
   if (isLoading) return <Skeleton className="w-[800] bg-black h-[600px]" />;
-
-  console.log(isLoading, user);
 
   return (
     <div className="flex flex-col overflow-hidden bg-white">
       <Routes>
-        <Route
-          path="/"
-          element={
-            <CheckAuth
-              isAuthenticated={isAuthenticated}
-              user={user}
-            ></CheckAuth>
-          }
-        />
+        {/* Root path redirect */}
+        <Route path="/" element={<Navigate to="/shop/home" replace />} />
+        
         <Route
           path="/auth"
           element={
@@ -71,6 +66,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="reviews" element={<AdminReviews />} />
           <Route path="features" element={<AdminFeatures />} />
         </Route>
         <Route
@@ -90,10 +86,30 @@ function App() {
           <Route path="search" element={<SearchProducts />} />
         </Route>
         <Route path="/unauth-page" element={<UnauthPage />} />
+        <Route
+          path="/read"
+          element={
+            <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+              <ShoppingLayout />
+            </CheckAuth>
+          }
+        >
+          <Route index element={<BookList />} />
+          <Route path=":bookId" element={<Reader />} />
+        </Route>
+        <Route
+          path="/preview/:bookId"
+          element={
+            <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+              <ShoppingLayout>
+                <PDFPreview />
+              </ShoppingLayout>
+            </CheckAuth>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   );
 }
-
 export default App;

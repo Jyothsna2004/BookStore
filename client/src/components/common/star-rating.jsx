@@ -1,27 +1,26 @@
 import { StarIcon } from "lucide-react";
 import { Button } from "../ui/button";
+import PropTypes from 'prop-types';
 
-function StarRatingComponent({ rating, handleRatingChange }) {
-  console.log(rating, "rating");
-
-  return [1, 2, 3, 4, 5].map((star) => (
-    <Button
-      className={`p-2 rounded-full transition-colors ${
-        star <= rating
-          ? "text-yellow-500 hover:bg-black"
-          : "text-black hover:bg-primary hover:text-primary-foreground"
-      }`}
-      variant="outline"
-      size="icon"
-      onClick={handleRatingChange ? () => handleRatingChange(star) : null}
-    >
-      <StarIcon
-        className={`w-6 h-6 ${
-          star <= rating ? "fill-yellow-500" : "fill-black"
-        }`}
-      />
-    </Button>
-  ));
+function StarRatingComponent({ rating = 0, handleRatingChange }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <StarIcon
+          key={`star-${star}`}
+          className={`h-5 w-5 ${
+            star <= (rating || 0) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+          }`}
+          onClick={() => handleRatingChange && handleRatingChange(star)}
+        />
+      ))}
+    </div>
+  );
 }
+
+StarRatingComponent.propTypes = {
+  rating: PropTypes.number,
+  handleRatingChange: PropTypes.func
+};
 
 export default StarRatingComponent;

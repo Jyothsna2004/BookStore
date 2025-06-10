@@ -37,7 +37,7 @@ function AuthLogin() {
     <div className="mx-auto w-full max-w-md space-y-6">
       {/* Heading at the top */}
       <h1 className="text-4xl font-bold text-red-600 text-center mb-6">
-        Welcome to the Bookstore
+        Welcome to the BookPoint
       </h1>
       
       <div className="text-center">

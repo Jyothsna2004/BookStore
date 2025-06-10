@@ -1,0 +1,72 @@
+.pdf-preview-container {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  background: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.pdf-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.pdf-controls button {
+  padding: 0.5rem 1rem;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pdf-controls button:hover {
+  background: #1976D2;
+}
+
+.pdf-controls button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.pdf-controls span {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.pdf-document {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.pdf-document .react-pdf__Document {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pdf-document .react-pdf__Page {
+  margin-bottom: 1rem;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-loading,
+.pdf-error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.pdf-error {
+  color: #dc3545;
+} 

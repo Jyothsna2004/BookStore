@@ -1,5 +1,28 @@
 const { imageUploadUtil } = require("../../helpers/cloudinary");
 const Product = require("../../models/Product");
+const multer = require('multer');
+const path = require('path');
+
+// Configure multer for PDF upload
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/pdfs/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed!'), false);
+    }
+  }
+}).single('pdf');
 
 const handleImageUpload = async (req, res) => {
   try {
@@ -15,9 +38,35 @@ const handleImageUpload = async (req, res) => {
     console.log(error);
     res.json({
       success: false,
-      message: "Error occured",
+      message: "Error occurred",
     });
   }
+};
+
+// Handle PDF upload
+const handlePDFUpload = async (req, res) => {
+  upload(req, res, function(err) {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No PDF file uploaded"
+      });
+    }
+
+    // Return the PDF URL
+    const pdfUrl = `/uploads/pdfs/${req.file.filename}`;
+    res.json({
+      success: true,
+      pdfUrl: pdfUrl
+    });
+  });
 };
 
 //add a new product
@@ -28,25 +77,27 @@ const addProduct = async (req, res) => {
       title,
       description,
       category,
-      brand,
+      language,
       price,
       salePrice,
       totalStock,
       averageReview,
+      isDigital,
+      pdfUrl
     } = req.body;
-
-    console.log(averageReview, "averageReview");
 
     const newlyCreatedProduct = new Product({
       image,
       title,
       description,
       category,
-      brand,
+      language,
       price,
       salePrice,
       totalStock,
       averageReview,
+      isDigital: isDigital || false,
+      pdfUrl: pdfUrl || null
     });
 
     await newlyCreatedProduct.save();
@@ -58,7 +109,7 @@ const addProduct = async (req, res) => {
     console.log(e);
     res.status(500).json({
       success: false,
-      message: "Error occured",
+      message: "Error occurred",
     });
   }
 };
@@ -90,7 +141,7 @@ const editProduct = async (req, res) => {
       title,
       description,
       category,
-      brand,
+      language,
       price,
       salePrice,
       totalStock,
@@ -156,6 +207,7 @@ const deleteProduct = async (req, res) => {
 
 module.exports = {
   handleImageUpload,
+  handlePDFUpload,
   addProduct,
   fetchAllProducts,
   editProduct,

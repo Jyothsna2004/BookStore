@@ -1,0 +1,96 @@
+.reader-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  min-height: 100vh;
+}
+
+.reader-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.reader-header h1 {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #eee;
+  border-radius: 4px;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #4CAF50;
+  transition: width 0.3s ease;
+}
+
+.page-info {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.reader-content {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #333;
+  margin: 2rem 0;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  min-height: 400px;
+}
+
+.reader-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+  padding: 1rem 0;
+  border-top: 1px solid #eee;
+}
+
+.reader-controls button {
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.reader-controls button:hover {
+  background-color: #45a049;
+}
+
+.reader-controls button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.reader-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.reader-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1.2rem;
+  color: #ff0000;
+} 

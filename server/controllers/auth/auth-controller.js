@@ -40,23 +40,28 @@ const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    console.log('Login attempt for email:', email);
     const checkUser = await User.findOne({ email });
-    if (!checkUser)
+    if (!checkUser) {
+      console.log('User not found for email:', email);
       return res.json({
         success: false,
         message: "User doesn't exists! Please register first",
       });
-
+    }
+    console.log('User found, checking password...');
     const checkPasswordMatch = await bcrypt.compare(
       password,
       checkUser.password
     );
-    if (!checkPasswordMatch)
+    if (!checkPasswordMatch) {
+      console.log('Password mismatch for email:', email);
       return res.json({
         success: false,
         message: "Incorrect password! Please try again",
       });
-
+    }
+    console.log('Password verified, generating token...');
     const token = jwt.sign(
       {
         id: checkUser._id,
@@ -67,7 +72,7 @@ const loginUser = async (req, res) => {
       "CLIENT_SECRET_KEY",
       { expiresIn: "60m" }
     );
-
+    console.log('Token generated, setting cookie...');
     res.cookie("token", token, { httpOnly: true, secure: false }).json({
       success: true,
       message: "Logged in successfully",
@@ -79,10 +84,10 @@ const loginUser = async (req, res) => {
       },
     });
   } catch (e) {
-    console.log(e);
+    console.error('Error during login:', e);
     res.status(500).json({
       success: false,
-      message: "Some error occured",
+      message: "Some error occurred",
     });
   }
 };
