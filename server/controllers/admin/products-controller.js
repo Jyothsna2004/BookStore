@@ -75,28 +75,30 @@ const addProduct = async (req, res) => {
     const {
       image,
       title,
+      author,
       description,
       category,
-      language,
       price,
-      salePrice,
-      totalStock,
-      averageReview,
-      isDigital,
+      stock,
       pdfUrl
     } = req.body;
+
+    // Validate required fields
+    if (!image || !title || !author || !description || !category || price === undefined || stock === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields. Please provide title, author, description, price, image, category, and stock."
+      });
+    }
 
     const newlyCreatedProduct = new Product({
       image,
       title,
+      author,
       description,
       category,
-      language,
       price,
-      salePrice,
-      totalStock,
-      averageReview,
-      isDigital: isDigital || false,
+      stock,
       pdfUrl: pdfUrl || null
     });
 
@@ -106,10 +108,11 @@ const addProduct = async (req, res) => {
       data: newlyCreatedProduct,
     });
   } catch (e) {
-    console.log(e);
+    console.error('Add Product Error:', e);
     res.status(500).json({
       success: false,
       message: "Error occurred",
+      error: e.message
     });
   }
 };

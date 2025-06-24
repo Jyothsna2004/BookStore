@@ -1,0 +1,395 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder, RobustScaler
+from sklearn.model_selection import TimeSeriesSplit
+from sklearn.metrics import mean_squared_error
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, ExtraTreesRegressor
+from sklearn.linear_model import Ridge, ElasticNet, Lasso
+from sklearn.svm import SVR
+import warnings
+warnings.filterwarnings('ignore')
+
+class SklearnBusDemandPredictor:
+    def __init__(self):
+        self.feature_columns = []
+        self.models = []
+        self.scalers = {}
+        self.encoders = {}
+        self.ensemble_weights = []
+        
+    def load_data(self):
+        """Load and preprocess data"""
+        print("📊 Loading data...")
+        
+        # Try different possible test file names
+        test_files = ['test.csv', 'test_8gqdJqH.csv']
+        test_df = None
+        
+        for test_file in test_files:
+            try:
+                test_df = pd.read_csv(test_file, parse_dates=['doj'])
+                print(f"✅ Found test file: {test_file}")
+                break
+            except FileNotFoundError:
+                continue
+        
+        if test_df is None:
+            raise FileNotFoundError("Could not find test file. Please ensure test.csv exists.")
+        
+        train = pd.read_csv('train.csv', parse_dates=['doj'])
+        transactions = pd.read_csv('transactions.csv', parse_dates=['doj', 'doi'])
+        
+        # Filter for 15-day prediction horizon
+        trans_15 = transactions[transactions['dbd'] == 15].copy()
+        
+        # Merge datasets
+        train_df = pd.merge(trans_15, train, on=['doj', 'srcid', 'destid'], how='inner')
+        test_df = pd.merge(trans_15, test_df, on=['doj', 'srcid', 'destid'], how='inner')
+        
+        print(f"✅ Loaded: {len(train_df)} train samples, {len(test_df)} test samples")
+        return train_df, test_df, transactions
+    
+    def create_comprehensive_features(self, df, transactions=None):
+        """Create comprehensive feature set using only pandas/numpy"""
+        print("🔧 Creating comprehensive features...")
+        
+        # Basic temporal features
+        df['dow'] = df['doj'].dt.dayofweek
+        df['month'] = df['doj'].dt.month
+        df['day'] = df['doj'].dt.day
+        df['quarter'] = df['doj'].dt.quarter
+        df['week_of_year'] = df['doj'].dt.isocalendar().week
+        df['day_of_year'] = df['doj'].dt.dayofyear
+        
+        # Weekend and special day indicators
+        df['is_weekend'] = (df['dow'] >= 5).astype(int)
+        df['is_monday'] = (df['dow'] == 0).astype(int)
+        df['is_friday'] = (df['dow'] == 4).astype(int)
+        df['is_sunday'] = (df['dow'] == 6).astype(int)
+        
+        # Month patterns
+        df['is_month_start'] = (df['day'] <= 5).astype(int)
+        df['is_month_end'] = (df['day'] >= 25).astype(int)
+        df['is_mid_month'] = ((df['day'] >= 10) & (df['day'] <= 20)).astype(int)
+        
+        # Seasonal cyclical features
+        df['sin_dow'] = np.sin(2 * np.pi * df['dow'] / 7)
+        df['cos_dow'] = np.cos(2 * np.pi * df['dow'] / 7)
+        df['sin_month'] = np.sin(2 * np.pi * df['month'] / 12)
+        df['cos_month'] = np.cos(2 * np.pi * df['month'] / 12)
+        df['sin_day'] = np.sin(2 * np.pi * df['day'] / 31)
+        df['cos_day'] = np.cos(2 * np.pi * df['day'] / 31)
+        df['sin_week'] = np.sin(2 * np.pi * df['week_of_year'] / 52)
+        df['cos_week'] = np.cos(2 * np.pi * df['week_of_year'] / 52)
+        
+        # Holiday indicators (basic patterns)
+        df['is_jan'] = (df['month'] == 1).astype(int)  # New Year period
+        df['is_dec'] = (df['month'] == 12).astype(int)  # Christmas period
+        df['is_festival_month'] = ((df['month'] == 10) | (df['month'] == 11)).astype(int)  # Festival season
+        
+        # Route features
+        df['route_id'] = df['srcid'].astype(str) + '_' + df['destid'].astype(str)
+        df['same_region'] = (df['srcid_region'] == df['destid_region']).astype(int)
+        
+        # Demand intensity features
+        df['search_seat_ratio'] = df['cumsum_searchcount'] / (df['cumsum_seatcount'] + 1)
+        df['seat_search_ratio'] = df['cumsum_seatcount'] / (df['cumsum_searchcount'] + 1)
+        
+        # Log transformations
+        df['log_searches'] = np.log1p(df['cumsum_searchcount'])
+        df['log_seats'] = np.log1p(df['cumsum_seatcount'])
+        
+        # Square root transformations
+        df['sqrt_searches'] = np.sqrt(df['cumsum_searchcount'])
+        df['sqrt_seats'] = np.sqrt(df['cumsum_seatcount'])
+        
+        # Power transformations
+        df['searches_squared'] = df['cumsum_searchcount'] ** 2
+        df['seats_squared'] = df['cumsum_seatcount'] ** 2
+        
+        # Interaction features
+        df['demand_momentum'] = df['cumsum_searchcount'] * df['cumsum_seatcount']
+        df['search_efficiency'] = df['cumsum_seatcount'] / (df['cumsum_searchcount'] + 0.1)
+        df['demand_pressure'] = df['cumsum_searchcount'] / (df['cumsum_seatcount'] + 0.1)
+        
+        # Binned features
+        df['searches_bin'] = pd.cut(df['cumsum_searchcount'], bins=10, labels=False)
+        df['seats_bin'] = pd.cut(df['cumsum_seatcount'], bins=10, labels=False)
+        
+        # Encode categorical features
+        categorical_features = ['srcid_region', 'destid_region', 'srcid_tier', 'destid_tier', 'route_id']
+        
+        for col in categorical_features:
+            if col not in self.encoders:
+                self.encoders[col] = LabelEncoder()
+                df[f'{col}_encoded'] = self.encoders[col].fit_transform(df[col].astype(str))
+            else:
+                # Handle unseen categories
+                df[f'{col}_temp'] = df[col].astype(str)
+                mask = df[f'{col}_temp'].isin(self.encoders[col].classes_)
+                df[f'{col}_encoded'] = 0  # Default for unseen
+                df.loc[mask, f'{col}_encoded'] = self.encoders[col].transform(df.loc[mask, f'{col}_temp'])
+                df.drop(f'{col}_temp', axis=1, inplace=True)
+        
+        # Historical features from transactions
+        if transactions is not None:
+            df = self.add_historical_features(df, transactions)
+        
+        return df
+    
+    def add_historical_features(self, df, transactions):
+        """Add historical demand patterns"""
+        print("📈 Adding historical features...")
+        
+        try:
+            # Route-level statistics
+            route_stats = transactions.groupby(['srcid', 'destid']).agg({
+                'cumsum_seatcount': ['mean', 'std', 'max', 'min', 'median'],
+                'cumsum_searchcount': ['mean', 'std', 'max', 'min', 'median']
+            }).reset_index()
+            
+            route_stats.columns = ['srcid', 'destid'] + [f'route_{col[0]}_{col[1]}' for col in route_stats.columns[2:]]
+            df = pd.merge(df, route_stats, on=['srcid', 'destid'], how='left')
+            
+            # Day of week patterns
+            dow_stats = transactions.groupby(['srcid', 'destid', transactions['doj'].dt.dayofweek]).agg({
+                'cumsum_seatcount': ['mean', 'std']
+            }).reset_index()
+            dow_stats.columns = ['srcid', 'destid', 'dow', 'dow_avg_seats', 'dow_std_seats']
+            df = pd.merge(df, dow_stats, on=['srcid', 'destid', 'dow'], how='left')
+            
+            # Month patterns
+            month_stats = transactions.groupby(['srcid', 'destid', transactions['doj'].dt.month]).agg({
+                'cumsum_seatcount': ['mean', 'std']
+            }).reset_index()
+            month_stats.columns = ['srcid', 'destid', 'month', 'month_avg_seats', 'month_std_seats']
+            df = pd.merge(df, month_stats, on=['srcid', 'destid', 'month'], how='left')
+            
+            # Regional patterns
+            region_stats = transactions.groupby(['srcid_region', 'destid_region']).agg({
+                'cumsum_seatcount': ['mean', 'std'],
+                'cumsum_searchcount': ['mean', 'std']
+            }).reset_index()
+            region_stats.columns = ['srcid_region', 'destid_region'] + [f'region_{col[0]}_{col[1]}' for col in region_stats.columns[2:]]
+            df = pd.merge(df, region_stats, on=['srcid_region', 'destid_region'], how='left')
+            
+        except Exception as e:
+            print(f"⚠️ Warning: Could not add some historical features: {e}")
+        
+        return df
+    
+    def prepare_features(self, train_df, test_df):
+        """Prepare final feature set"""
+        print("🎯 Preparing features...")
+        
+        # Fill missing values
+        for df in [train_df, test_df]:
+            # Numerical features
+            num_cols = df.select_dtypes(include=[np.number]).columns
+            df[num_cols] = df[num_cols].fillna(df[num_cols].median())
+        
+        # Define feature columns
+        exclude_cols = ['doj', 'doi', 'final_seatcount', 'route_key', 'srcid_region', 
+                       'destid_region', 'srcid_tier', 'destid_tier', 'route_id', 'dbd']
+        
+        self.feature_columns = [col for col in train_df.columns if col not in exclude_cols]
+        
+        print(f"📊 Using {len(self.feature_columns)} features")
+        
+        X_train = train_df[self.feature_columns].copy()
+        y_train = train_df['final_seatcount'].copy()
+        X_test = test_df[self.feature_columns].copy()
+        
+        # Scale features for linear models
+        self.scalers['robust'] = RobustScaler()
+        X_train_scaled = self.scalers['robust'].fit_transform(X_train)
+        X_test_scaled = self.scalers['robust'].transform(X_test)
+        
+        # Convert back to DataFrame
+        X_train_scaled = pd.DataFrame(X_train_scaled, columns=self.feature_columns, index=X_train.index)
+        X_test_scaled = pd.DataFrame(X_test_scaled, columns=self.feature_columns, index=X_test.index)
+        
+        return X_train, y_train, X_test, X_train_scaled, X_test_scaled
+    
+    def train_sklearn_ensemble(self, X_train, y_train, X_train_scaled):
+        """Train ensemble using only sklearn models"""
+        print("🚀 Training sklearn ensemble...")
+        
+        # Define sklearn models
+        models_config = [
+            {
+                'name': 'RandomForest',
+                'model': RandomForestRegressor(
+                    n_estimators=300,
+                    max_depth=15,
+                    min_samples_split=5,
+                    min_samples_leaf=2,
+                    max_features='sqrt',
+                    random_state=42,
+                    n_jobs=-1
+                ),
+                'use_scaled': False
+            },
+            {
+                'name': 'ExtraTrees',
+                'model': ExtraTreesRegressor(
+                    n_estimators=300,
+                    max_depth=15,
+                    min_samples_split=5,
+                    min_samples_leaf=2,
+                    max_features='sqrt',
+                    random_state=42,
+                    n_jobs=-1
+                ),
+                'use_scaled': False
+            },
+            {
+                'name': 'GradientBoosting',
+                'model': GradientBoostingRegressor(
+                    n_estimators=300,
+                    learning_rate=0.08,
+                    max_depth=8,
+                    subsample=0.8,
+                    max_features='sqrt',
+                    random_state=42
+                ),
+                'use_scaled': False
+            },
+            {
+                'name': 'Ridge',
+                'model': Ridge(alpha=10.0),
+                'use_scaled': True
+            },
+            {
+                'name': 'ElasticNet',
+                'model': ElasticNet(alpha=2.0, l1_ratio=0.5, random_state=42),
+                'use_scaled': True
+            },
+            {
+                'name': 'Lasso',
+                'model': Lasso(alpha=1.0, random_state=42),
+                'use_scaled': True
+            }
+        ]
+        
+        # Time series cross-validation
+        tscv = TimeSeriesSplit(n_splits=5)
+        model_scores = []
+        
+        print(f"🔄 Training {len(models_config)} models with 5-fold time series CV...")
+        
+        for config in models_config:
+            print(f"▶ Training {config['name']}...")
+            
+            model = config['model']
+            use_scaled = config['use_scaled']
+            X_use = X_train_scaled if use_scaled else X_train
+            
+            # Cross-validation
+            cv_scores = []
+            for fold, (train_idx, val_idx) in enumerate(tscv.split(X_use)):
+                X_tr, X_val = X_use.iloc[train_idx], X_use.iloc[val_idx]
+                y_tr, y_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
+                
+                model.fit(X_tr, y_tr)
+                pred = model.predict(X_val)
+                pred = np.maximum(0, pred)  # Ensure non-negative
+                
+                rmse = np.sqrt(mean_squared_error(y_val, pred))
+                cv_scores.append(rmse)
+            
+            avg_score = np.mean(cv_scores)
+            std_score = np.std(cv_scores)
+            
+            print(f"  {config['name']} CV RMSE: {avg_score:.4f} (+/- {std_score:.4f})")
+            
+            # Train on full data
+            model.fit(X_use, y_train)
+            
+            self.models.append({
+                'name': config['name'],
+                'model': model,
+                'score': avg_score,
+                'use_scaled': use_scaled
+            })
+            
+            model_scores.append(avg_score)
+        
+        # Calculate ensemble weights (inverse of RMSE)
+        weights = [1.0 / (score + 1e-6) for score in model_scores]  # Add small epsilon to avoid division by zero
+        total_weight = sum(weights)
+        self.ensemble_weights = [w / total_weight for w in weights]
+        
+        print(f"✅ Ensemble weights:")
+        for i, model_info in enumerate(self.models):
+            print(f"  {model_info['name']}: {self.ensemble_weights[i]:.3f}")
+        
+        return self.models
+    
+    def predict_ensemble(self, X_test, X_test_scaled):
+        """Make ensemble predictions"""
+        print("🔮 Making ensemble predictions...")
+        
+        predictions = []
+        
+        for model_info, weight in zip(self.models, self.ensemble_weights):
+            X_use = X_test_scaled if model_info['use_scaled'] else X_test
+            pred = model_info['model'].predict(X_use)
+            pred = np.maximum(0, pred)  # Ensure non-negative
+            predictions.append(pred * weight)
+        
+        final_pred = np.sum(predictions, axis=0)
+        final_pred = np.maximum(0, final_pred)  # Final safety check
+        
+        return final_pred
+    
+    def run_pipeline(self):
+        """Execute the complete pipeline"""
+        print("🚌 Starting Sklearn Bus Demand Prediction Pipeline")
+        print("=" * 60)
+        
+        # Load data
+        train_df, test_df, transactions = self.load_data()
+        
+        # Create features
+        train_df = self.create_comprehensive_features(train_df, transactions)
+        test_df = self.create_comprehensive_features(test_df, transactions)
+        
+        # Prepare features
+        X_train, y_train, X_test, X_train_scaled, X_test_scaled = self.prepare_features(train_df, test_df)
+        
+        # Train models
+        self.train_sklearn_ensemble(X_train, y_train, X_train_scaled)
+        
+        # Make predictions
+        predictions = self.predict_ensemble(X_test, X_test_scaled)
+        
+        # Create submission
+        if 'route_key' in test_df.columns:
+            route_keys = test_df['route_key']
+        else:
+            route_keys = range(len(predictions))
+        
+        submission = pd.DataFrame({
+            'route_key': route_keys,
+            'final_seatcount': np.round(predictions).astype(int)
+        })
+        
+        submission.to_csv('sklearn_submission.csv', index=False)
+        
+        print("=" * 60)
+        print("✅ Pipeline completed successfully!")
+        print(f"📊 Prediction Statistics:")
+        print(f"   Mean: {predictions.mean():.2f}")
+        print(f"   Std:  {predictions.std():.2f}")
+        print(f"   Min:  {predictions.min():.2f}")
+        print(f"   Max:  {predictions.max():.2f}")
+        print(f"   Non-zero predictions: {np.sum(predictions > 0)}/{len(predictions)}")
+        print(f"💾 Submission saved as 'sklearn_submission.csv'")
+        
+        return submission
+
+# Execute the sklearn-only pipeline
+if __name__ == "__main__":
+    predictor = SklearnBusDemandPredictor()
+    submission = predictor.run_pipeline()

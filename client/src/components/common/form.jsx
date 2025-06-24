@@ -9,6 +9,7 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
+import PropTypes from 'prop-types';
 
 function CommonForm({
   formControls,
@@ -109,7 +110,8 @@ function CommonForm({
   }
 
   return (
-    <form onSubmit={onSubmit}>
+    <>
+      <form onSubmit={onSubmit} className="space-y-4">
       <div className="flex flex-col gap-3">
         {formControls.map((controlItem) => (
           <div className="grid w-full gap-1.5" key={controlItem.name}>
@@ -122,7 +124,17 @@ function CommonForm({
         {buttonText || "Submit"}
       </Button>
     </form>
+    </>
   );
 }
+
+CommonForm.propTypes = {
+  formControls: PropTypes.array.isRequired,
+  formData: PropTypes.object.isRequired,
+  setFormData: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  buttonText: PropTypes.string,
+  isBtnDisabled: PropTypes.bool,
+};
 
 export default CommonForm;

@@ -1,3 +1,6 @@
+// Remove all React/JSX code and only export plain JavaScript config objects and arrays.
+// This file should not contain any React components or JSX. Only keep the form element arrays and config objects.
+
 export const registerFormControls = [
   {
     name: "userName",
@@ -46,6 +49,13 @@ export const addProductFormElements = [
     componentType: "input",
     type: "text",
     placeholder: "Enter product title",
+  },
+  {
+    label: "Author",
+    name: "author",
+    componentType: "input",
+    type: "text",
+    placeholder: "Enter author name",
   },
   {
     label: "Description",

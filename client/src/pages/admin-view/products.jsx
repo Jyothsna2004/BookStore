@@ -18,6 +18,7 @@ import {
 } from "@/store/admin/products-slice";
 import { Fragment, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import ProductForm from "@/components/admin-view/product-form";
 
 const initialFormData = {
   image: null,
@@ -77,7 +78,11 @@ function AdminProducts() {
             toast({
               title: "Product add successfully",
             });
+          } else {
+            console.log(data?.payload?.error);
           }
+        }).catch((error) => {
+          console.log(error.response?.data);
         });
   }
 
@@ -136,23 +141,14 @@ function AdminProducts() {
               {currentEditedId !== null ? "Edit Product" : "Add New Product"}
             </SheetTitle>
           </SheetHeader>
-          <ProductImageUpload
-            imageFile={imageFile}
-            setImageFile={setImageFile}
-            uploadedImageUrl={uploadedImageUrl}
-            setUploadedImageUrl={setUploadedImageUrl}
-            setImageLoadingState={setImageLoadingState}
-            imageLoadingState={imageLoadingState}
-            isEditMode={currentEditedId !== null}
-          />
           <div className="py-6">
-            <CommonForm
-              onSubmit={onSubmit}
-              formData={formData}
-              setFormData={setFormData}
-              buttonText={currentEditedId !== null ? "Edit" : "Add"}
-              formControls={addProductFormElements}
-              isBtnDisabled={!isFormValid()}
+            <ProductForm
+              onSuccess={() => {
+                setOpenCreateProductsDialog(false);
+                setFormData(initialFormData);
+                setCurrentEditedId(null);
+                dispatch(fetchAllProducts());
+              }}
             />
           </div>
         </SheetContent>

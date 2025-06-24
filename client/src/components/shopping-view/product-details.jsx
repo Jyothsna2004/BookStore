@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X, Heart, HeartOff } from "lucide-react";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../ui/dialog";
 import { useDispatch, useSelector } from "react-redux";
@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { getReviews } from "@/store/shop/review-slice";
 import ReviewForm from "../ReviewForm";
 import PropTypes from 'prop-types';
+import { addToWishlist, removeFromWishlist } from "@/store/shop/wishlist-slice";
 
 function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const dispatch = useDispatch();
@@ -17,6 +18,8 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const { cartItems } = useSelector((state) => state.shopCart);
   const { reviews } = useSelector((state) => state.shopReview);
   const { toast } = useToast();
+  const { wishlistItems } = useSelector((state) => state.shopWishlist);
+  const isWishlisted = wishlistItems.some(item => (item._id || item) === productDetails?._id);
 
   function handleAddToCart(getCurrentProductId, getTotalStock) {
     if (!user) {
@@ -73,6 +76,24 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   function handleDialogClose() {
     setOpen(false);
     dispatch(setProductDetails());
+  }
+
+  function handleWishlistToggle() {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to use wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (isWishlisted) {
+      dispatch(removeFromWishlist({ userId: user.id, productId: productDetails._id }));
+      toast({ title: "Removed from Wishlist" });
+    } else {
+      dispatch(addToWishlist({ userId: user.id, productId: productDetails._id }));
+      toast({ title: "Added to Wishlist" });
+    }
   }
 
   // Fetch reviews when dialog opens with product details
@@ -142,7 +163,17 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                 </div>
 
                 {/* Add to Cart or Download PDF Button */}
-                <div className="w-full">
+                <div className="w-full flex gap-2">
+                  {/* Wishlist Button */}
+                  <Button
+                    variant={isWishlisted ? "secondary" : "outline"}
+                    className="w-12 p-0 flex items-center justify-center"
+                    onClick={handleWishlistToggle}
+                    aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                  >
+                    {isWishlisted ? <HeartOff className="text-red-500" /> : <Heart />}
+                  </Button>
+                  <div className="flex-1">
                   {productDetails?.isDigital ? (
                     productDetails?.pdfUrl ? (
                       <Button
@@ -180,13 +211,14 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                       </Button>
                     )
                   )}
-                  
-                  {!productDetails?.isDigital && productDetails?.totalStock > 0 && productDetails?.totalStock <= 5 && (
-                    <p className="text-sm text-orange-600 mt-2">
-                      Only {productDetails.totalStock} left in stock!
-                    </p>
-                  )}
+                  </div>
                 </div>
+
+                {!productDetails?.isDigital && productDetails?.totalStock > 0 && productDetails?.totalStock <= 5 && (
+                  <p className="text-sm text-orange-600 mt-2">
+                    Only {productDetails.totalStock} left in stock!
+                  </p>
+                )}
               </div>
             </div>
           </div>

@@ -26,6 +26,7 @@ import BookList from './components/BookList/BookList';
 import PDFPreview from './components/PDFPreview/PDFPreview';
 import Reader from './components/Reader/Reader';
 import AdminReviews from "./pages/admin-view/reviews";
+import WishlistPage from "./pages/shopping-view/wishlist";
 
 function App() {
   const { user, isAuthenticated, isLoading } = useSelector(
@@ -84,6 +85,7 @@ function App() {
           <Route path="paypal-return" element={<PaypalReturnPage />} />
           <Route path="payment-success" element={<PaymentSuccessPage />} />
           <Route path="search" element={<SearchProducts />} />
+          <Route path="wishlist" element={<WishlistPage />} />
         </Route>
         <Route path="/unauth-page" element={<UnauthPage />} />
         <Route
